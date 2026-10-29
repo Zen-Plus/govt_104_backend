@@ -1,0 +1,44 @@
+# Local / staging stack for the 104 CRM.
+#   docker compose up -d        -> PostgreSQL :5432, MongoDB :27017, backend :8080, frontend :80
+# Secrets come from a .env file next to this compose file (copy .env.example -> .env).
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: crm104
+      POSTGRES_USER: ${DB_USER:-crm104}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-crm104}"], interval: 5s, retries: 10 }
+
+  mongo:
+    image: mongo:7
+    ports: ["27017:27017"]
+    volumes: [mongodata:/data/db]
+
+  backend:
+    build: ./backend
+    depends_on:
+      postgres: { condition: service_healthy }
+      mongo: { condition: service_started }
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/crm104
+      DB_USER: ${DB_USER:-crm104}
+      DB_PASSWORD: ${DB_PASSWORD}
+      MONGO_URI: mongodb://mongo:27017/crm104_logs
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      CRYPTO_KEY: ${CRYPTO_KEY:?set CRYPTO_KEY in .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      SEED_USERS: ${SEED_USERS:-true}
+      SEED_PASSWORD: ${SEED_PASSWORD:-Crm@104Demo}
+    ports: ["8080:8080"]
+
+  frontend:
+    build: ./frontend
+    depends_on: [backend]
+    ports: ["80:80"]
+
+volumes:
+  pgdata:
+  mongodata:

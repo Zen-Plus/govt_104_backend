@@ -1,0 +1,63 @@
+# =====================================================================
+# 104 CRM - Application configuration
+# SECURITY: every secret is read from an environment variable.
+# Never commit real passwords/keys. Defaults below are for local dev only.
+# =====================================================================
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-stacktrace: never      # never leak stack traces to clients
+    include-message: never
+
+spring:
+  application:
+    name: crm104
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/crm104}
+    username: ${DB_USER:crm104}
+    password: ${DB_PASSWORD:crm104_dev_pw}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none               # schema is owned by Flyway migrations (db/migration)
+    properties:
+      hibernate.jdbc.time_zone: Asia/Kolkata
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  data:
+    mongodb:
+      uri: ${MONGO_URI:mongodb://localhost:27017/crm104_logs}
+  servlet:
+    multipart:
+      max-file-size: 5MB          # grievance attachments
+      max-request-size: 6MB
+  jackson:
+    time-zone: Asia/Kolkata
+    default-property-inclusion: non_null
+
+# ---- Application-specific settings ----
+app:
+  security:
+    # HMAC key for JWT signing - must be >= 32 bytes. Set JWT_SECRET in production.
+    jwt-secret: ${JWT_SECRET:dev-only-change-me-dev-only-change-me-0123456789}
+    jwt-expiry-minutes: ${JWT_EXPIRY_MINUTES:480}   # one operator shift
+    # AES-256 key (Base64, 32 bytes) used to encrypt third-party credentials at rest.
+    crypto-key: ${CRYPTO_KEY:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
+    cors-origins: ${CORS_ORIGINS:http://localhost:5173}
+    login-max-attempts: 5
+    login-lock-minutes: 15
+  escalation:
+    # How often the escalation engine scans open grievances (cron, IST).
+    cron: ${ESCALATION_CRON:0 0 * * * *}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    root: INFO
+    in.gov.health104: INFO
