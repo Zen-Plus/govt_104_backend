@@ -52,6 +52,7 @@ public class GrievanceService {
     public Page<GrievanceResponse> search(GrievanceStatus status, EscalationLevel level, String district,
                                           String q, String age, int page, int size) {
         String query = (q == null || q.isBlank()) ? null : q.trim();
+        String pattern = query == null ? null : "%" + query + "%";
         String dist = (district == null || district.isBlank()) ? null : district;
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime from = LocalDateTime.of(1970, 1, 1, 0, 0), to = now.plusDays(1);
@@ -63,7 +64,7 @@ public class GrievanceService {
             case "OLDER" -> to = now.minusMonths(1);
             default -> { }
         }
-        return repo.search(status, level, dist, query, from, to, PageRequest.of(page, Math.min(size, 100))).map(this::toResponse);
+        return repo.search(status, level, dist, query, pattern, from, to, PageRequest.of(page, Math.min(size, 100))).map(this::toResponse);
     }
 
     /** SIO screen actions by Supervisor / CMHO. */

@@ -31,7 +31,7 @@ public class CallRecord {
     @JoinColumn(name = "caller_id")
     private Caller caller;
     @Enumerated(EnumType.STRING)
-    private CallPathway pathway;
+    private CallPathway pathway = CallPathway.INFORMATION;
     private String callType;
     private String queryText;
     private String adviceGiven;

@@ -60,6 +60,7 @@ public class CallService {
         call.setCallRef(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
                 + String.format("%05d", ThreadLocalRandom.current().nextInt(100000)));
         call.setPhone(r.phone());
+        call.setPathway(CallPathway.INFORMATION);
         call.setStatus("OPEN");
         currentUserId().ifPresent(call::setAgentId);
         calls.save(call);

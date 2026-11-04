@@ -11,8 +11,11 @@ public interface FacilityRepository extends JpaRepository<Facility, Long> {
         SELECT f FROM Facility f WHERE f.active = true
           AND (:type IS NULL OR f.type = :type)
           AND (:district IS NULL OR f.district = :district)
-          AND (:q IS NULL OR LOWER(f.name) LIKE LOWER(CONCAT('%', :q, '%')))
+          AND (:q IS NULL OR LOWER(f.name) LIKE LOWER(:pattern))
         ORDER BY f.name
         """)
-    List<Facility> search(@Param("type") String type, @Param("district") String district, @Param("q") String q);
+    List<Facility> search(@Param("type") String type,
+                          @Param("district") String district,
+                          @Param("q") String q,
+                          @Param("pattern") String pattern);
 }

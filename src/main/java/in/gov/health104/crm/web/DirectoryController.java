@@ -47,14 +47,15 @@ public class DirectoryController {
     public List<Facility> facilities(@RequestParam(required = false) @Size(max = 30) String type,
                                      @RequestParam(required = false) @Size(max = 60) String district,
                                      @RequestParam(required = false) @Size(max = 60) String q) {
-        return facilities.search(blank(type), blank(district), blank(q));
+        String trimmed = blank(q);
+        return facilities.search(blank(type), blank(district), trimmed, trimmed == null ? null : "%" + trimmed + "%");
     }
 
     @GetMapping("/facilities/nearest")
     public List<Map<String, Object>> nearest(@RequestParam double lat, @RequestParam double lng,
                                              @RequestParam(required = false) String type,
                                              @RequestParam(defaultValue = "10") int limit) {
-        return facilities.search(blank(type), null, null).stream()
+        return facilities.search(blank(type), null, null, null).stream()
                 .filter(f -> f.getLatitude() != null && f.getLongitude() != null)
                 .map(f -> {
                     Map<String, Object> m = new HashMap<>();

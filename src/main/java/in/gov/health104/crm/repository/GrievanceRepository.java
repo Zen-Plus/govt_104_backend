@@ -24,15 +24,19 @@ public interface GrievanceRepository extends JpaRepository<Grievance, Long> {
           AND (:level IS NULL OR g.currentLevel = :level)
           AND (:district IS NULL OR g.district = :district)
           AND g.createdAt >= :from AND g.createdAt < :to
-          AND (:q IS NULL OR LOWER(g.grievanceNo) LIKE LOWER(CONCAT('%', :q, '%'))
-                         OR LOWER(g.patientName) LIKE LOWER(CONCAT('%', :q, '%'))
-                         OR g.contactPhone LIKE CONCAT('%', :q, '%'))
+          AND (
+              :q IS NULL OR
+              LOWER(g.grievanceNo) LIKE LOWER(:pattern) OR
+              LOWER(g.patientName) LIKE LOWER(:pattern) OR
+              LOWER(g.contactPhone) LIKE LOWER(:pattern)
+          )
         ORDER BY g.createdAt DESC
         """)
     Page<Grievance> search(@Param("status") GrievanceStatus status,
                            @Param("level") EscalationLevel level,
                            @Param("district") String district,
                            @Param("q") String q,
+                           @Param("pattern") String pattern,
                            @Param("from") java.time.LocalDateTime from,
                            @Param("to") java.time.LocalDateTime to,
                            Pageable pageable);
