@@ -16,8 +16,8 @@ Prerequisites: Docker 24+ with Docker Compose v2, and both repos cloned side by 
 
 ```bash
 mkdir crm104 && cd crm104
-git clone https://github.com/Zen-Plus/104_backend.git
-git clone https://github.com/Zen-Plus/104_frontend.git
+git clone https://github.com/Karthi-Lachmanan/govt_104_backend.git 104_backend
+git clone https://github.com/Zen-Plus/govt_104_frontend.git 104_frontend
 ```
 
 ```
