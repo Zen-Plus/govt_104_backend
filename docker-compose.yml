@@ -1,43 +1,80 @@
-# Local / staging stack for the 104 CRM.
-#   docker compose up -d        -> PostgreSQL :5432, MongoDB :27017, backend :8080, frontend :80
-# Secrets come from a .env file next to this compose file (copy .env.example -> .env).
+# 104 CRM - full stack: PostgreSQL + MongoDB + Spring Boot backend + React/nginx frontend.
+#
+# Lives in the 104_backend repo. Clone 104_frontend next to it:
+#   <parent>/104_backend   (this repo)
+#   <parent>/104_frontend
+#
+#   cp .env.example .env      # then fill in every secret
+#   docker compose up -d --build
+#   open http://localhost     (FRONTEND_PORT)
+#
+# Start order is enforced by health checks: databases -> backend -> frontend.
+# Database and backend ports are bound to 127.0.0.1 only (not reachable from other machines).
+name: crm104
+
 services:
   postgres:
-    image: postgres:16
+    build: ./databases/postgres
+    image: crm104-postgres:latest
+    restart: unless-stopped
     environment:
       POSTGRES_DB: crm104
       POSTGRES_USER: ${DB_USER:-crm104}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
-    ports: ["5432:5432"]
-    volumes: [pgdata:/var/lib/postgresql/data]
-    healthcheck: { test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-crm104}"], interval: 5s, retries: 10 }
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
 
   mongo:
-    image: mongo:7
-    ports: ["27017:27017"]
-    volumes: [mongodata:/data/db]
+    build: ./databases/mongo
+    image: crm104-mongo:latest
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?set MONGO_ROOT_PASSWORD in .env}
+      MONGO_APP_DB: crm104_logs
+      MONGO_APP_USER: ${MONGO_APP_USER:-crm104}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?set MONGO_APP_PASSWORD in .env}
+    volumes:
+      - mongodata:/data/db
+    ports:
+      - "127.0.0.1:${MONGO_PORT:-27017}:27017"
 
   backend:
-    build: ./backend
+    build: .
+    image: crm104-backend:latest
+    restart: unless-stopped
     depends_on:
       postgres: { condition: service_healthy }
-      mongo: { condition: service_started }
+      mongo: { condition: service_healthy }
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/crm104
       DB_USER: ${DB_USER:-crm104}
       DB_PASSWORD: ${DB_PASSWORD}
-      MONGO_URI: mongodb://mongo:27017/crm104_logs
+      MONGO_URI: mongodb://${MONGO_APP_USER:-crm104}:${MONGO_APP_PASSWORD}@mongo:27017/crm104_logs?authSource=crm104_logs
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       CRYPTO_KEY: ${CRYPTO_KEY:?set CRYPTO_KEY in .env}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
-      SEED_USERS: ${SEED_USERS:-true}
-      SEED_PASSWORD: ${SEED_PASSWORD:-Crm@104Demo}
-    ports: ["8080:8080"]
+      SEED_USERS: ${SEED_USERS:-false}
+      SEED_PASSWORD: ${SEED_PASSWORD:-}
+      JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75}
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8080}:8080"
 
   frontend:
-    build: ./frontend
-    depends_on: [backend]
-    ports: ["80:80"]
+    build:
+      context: ../104_frontend
+      args:
+        VITE_API_BASE: ${VITE_API_BASE:-}
+    image: crm104-frontend:latest
+    restart: unless-stopped
+    depends_on:
+      backend: { condition: service_healthy }
+    environment:
+      BACKEND_URL: http://backend:8080
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
 
 volumes:
   pgdata:
