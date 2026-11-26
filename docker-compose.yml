@@ -25,9 +25,9 @@ services:
 
 
     ports:
-"127.0.0.1:${BACKEND_PORT:-8081}:8080"
+      - "127.0.0.1:${BACKEND_PORT:-8081}:8080"
     networks:
-app-db-network
+      - app-db-network
 networks:
   app-db-network:
     external: true
